@@ -7,6 +7,7 @@ Server::Server(int port) {
     buf_ = new char[buflen_+1];
     request = "";
     success = true;
+    chat = 0;
 }
 
 Server::~Server() {
@@ -117,11 +118,26 @@ void * Server::messhandle(void *server){
     while(1){
     // get a request
     //int _client = *((int*)client);
+    int _chat = _server->getchat();
+    if(_chat == 1){
+        string request = _server->get_request();
+        int s = request.find_first_not_of("");
+        int e = request.find_last_not_of(" ");
+        string newrequest = request.substr(s, e - s + 1);
+        int client = atoi(newrequest.c_str());//要连接的客户端
+        _server->p2pchat(client, _server);
+        _server->setchat(0);
+        string inform = "超时，连接已断开\n";
+        _server->send_response(clients, inform);
+        continue;
+    }
     string request = _server->get_request();
     // break if client is done or an error occurred
     if (request.empty())
         break;
     // send response
+    if(!request.compare("connect\n"))
+        continue;
     bool success = _server->send_response(clients,request);
     // break if an error occurred
     if (not success)
@@ -209,8 +225,11 @@ string Server::get_request() {
         return newrequest;
     }
     
-    if(request.compare("connect\n") == 0){
-        
+    if(!request.compare("connect\n")||!request.compare("reconnect\n")){
+        string newrequest = "";
+        newrequest.append("请输入想要连接的端口号：\n");
+        chat = 1;
+        return newrequest;
     }
     
     return request;
@@ -221,36 +240,69 @@ bool Server::send_response(vector<int>&clients, string response) {
     const char* ptr = response.c_str();
     int nleft = response.length();
     int nwritten;
-    int client = m_clients[m_clients.size() - 1];
     // loop to be sure it is all sent
-    while (nleft) {
-        if ((nwritten = send(client, ptr, nleft, 0)) < 0) {
-            if (errno == EINTR) {
-                // the socket call was interrupted -- try again
-                continue;
-            } else {
-                // an error occurred, so break out
-                perror("write");
+    for(int i = 0; i < clients.size() - 1; i++){
+        int client = clients[i];
+        while (nleft) {
+            if ((nwritten = send(client, ptr, nleft, 0)) < 0) {
+                if (errno == EINTR) {
+                    // the socket call was interrupted -- try again
+                    continue;
+                } else {
+                    // an error occurred, so break out
+                    perror("write");
+                    return false;
+                }
+            } else if (nwritten == 0) {
+                // the socket is closed
                 return false;
             }
-        } else if (nwritten == 0) {
-            // the socket is closed
-            return false;
+            nleft -= nwritten;
+            ptr += nwritten;
         }
-        nleft -= nwritten;
-        ptr += nwritten;
     }
     return true;
 }
 
 vector<int> Server::getclients(){
-    return m_clients;
+    vector<int>curClient;
+    curClient.push_back(m_clients[m_clients.size() - 1]);
+    return curClient;
 }
 
 void Server::setclients(vector<int>clients){
     m_clients = clients;
 }
 
+int Server::getchat(){
+    return chat;
+}
 
+void Server::setchat(int _chat){
+    chat = _chat;
+}
 
+void Server::p2pchat(int client, Server *server){
+    time_t startT = time(nullptr);
+    while (1) {
+        string request = server->get_request();
+        if(!request.compare("disconnect\n"))
+            break;
+        vector<int> clients;
+        clients.push_back(client);
+        if(request.empty())
+            break;
+        bool success = send_response(clients, request);
+        if(not success)
+            break;
+        time_t endT = time(nullptr);
+        if((endT - startT) > 300)
+            break;
+    }
+}
 
+void Server::broadcast(vector<int> _clients){
+    while(1){
+        
+    }
+}

@@ -40,6 +40,10 @@ private:
     vector<int> getclients();
     void setclients(vector<int>);
     static void *messhandle(void *);
+    int getchat();
+    void setchat(int);
+    void p2pchat(int, Server *);
+    void broadcast(vector<int>);
     
     string request;
     bool success;
@@ -47,6 +51,7 @@ private:
     int server_;
     int buflen_;
     char* buf_;
+    int chat;
     vector<int>m_clients;
     vector<sockaddr_in> clientaddrs;
 };
