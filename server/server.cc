@@ -241,7 +241,7 @@ bool Server::send_response(vector<int>&clients, string response) {
     int nleft = response.length();
     int nwritten;
     // loop to be sure it is all sent
-    for(int i = 0; i < clients.size() - 1; i++){
+    for(int i = 0; i < clients.size(); i++){
         int client = clients[i];
         while (nleft) {
             if ((nwritten = send(client, ptr, nleft, 0)) < 0) {
