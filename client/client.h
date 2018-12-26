@@ -28,7 +28,8 @@ private:
     void echo();
     bool send_request(string);
     bool get_response();
-
+    bool instant_response();
+    
     string host_;
     int port_;
     int server_;
@@ -36,4 +37,6 @@ private:
     char* buf_;
     int disconnect;
     int transport;
+    
+    int enableread;
 };

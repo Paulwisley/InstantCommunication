@@ -8,6 +8,7 @@ Client::Client(string host, int port) {
     buf_ = new char[buflen_+1];
     disconnect = 0;
     transport = port;
+    enableread = 1;
 }
 
 Client::~Client() {

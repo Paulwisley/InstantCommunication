@@ -133,11 +133,11 @@ void * Server::messhandle(void *server){
             _server->send_response(clients, "请重新输入正确的端口号\n");
             continue;
         }
-        int client = allclient2port.
+        int client = allclient2port[port];
         _server->send_response(clients, "通信已连接，请发送消息\n");
         _server->p2pchat(client, _server,clients[0]);
         _server->setchat(0);
-        string inform = "超时，连接已断开\n";
+        string inform = "连接已断开\n";
         _server->send_response(clients, inform);
         continue;
     }
@@ -200,6 +200,7 @@ string Server::get_request(int client) {
     }
     
     if(request.compare("who\n") == 0){
+        //查询所有已经连接的客户端，将套接字和端口直接建立映射
         string newrequest = "";
         int num = m_clients.size();
         for(int i = 0; i < num; i++){
@@ -211,7 +212,7 @@ string Server::get_request(int client) {
                 newrequest.append(inet_ntoa((in_addr)addr.sin_addr));
                 int port = ntohs(addr.sin_port);
                 if(!m_client2ports.count(port))
-                    m_client2ports[m_clients[i]] = port;
+                    m_client2ports[port] = m_clients[i];
                 string strport = to_string(port);
                 newrequest.append(":"+strport+"(self)"+"\n");
                 break;
@@ -223,7 +224,7 @@ string Server::get_request(int client) {
             newrequest.append(inet_ntoa((in_addr)addr.sin_addr));
             int port = ntohs(addr.sin_port);
             if(!m_client2ports.count(port))
-                m_client2ports[m_clients[i]] = port;
+                m_client2ports[port] = m_clients[i];
             string strport = to_string(port);
             newrequest.append(":"+strport+"\n");
         }
