@@ -134,11 +134,6 @@ void Client::echo() {
         if(!line.compare("Time\n")||!line.compare("name\n")||!line.compare("who\n")){
             return;
         }
-        
-        if(!line.compare("connect\n")||!line.compare("reconnect\n")){
-            cout<<"请输入想要连接的端口号："<<endl;
-            continue;
-        }
     }
     close_socket();
 }

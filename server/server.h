@@ -14,6 +14,7 @@
 #include "iostream"
 #include "pthread.h"
 #include <vector>
+#include <map>
 using namespace std;
 
 class Server {
@@ -34,15 +35,17 @@ private:
     void create();
     void close_socket();
     void serve();
-    void handle(vector<int>&);
-    string get_request();
+    void handle();
+    string get_request(int);
     bool send_response(vector<int>&, string);
     vector<int> getclients();
+    vector<int> getAllclient();
+    map<int,int> getclient2port();
     void setclients(vector<int>);
     static void *messhandle(void *);
     int getchat();
     void setchat(int);
-    void p2pchat(int, Server *);
+    void p2pchat(int, Server *, int);
     void broadcast(vector<int>);
     
     string request;
@@ -53,5 +56,6 @@ private:
     char* buf_;
     int chat;
     vector<int>m_clients;
+    map<int,int>m_client2ports;//维护所有的端口号
     vector<sockaddr_in> clientaddrs;
 };

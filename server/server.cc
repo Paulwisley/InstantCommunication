@@ -74,13 +74,13 @@ void Server::serve() {
         clients.push_back(client);
         setclients(clients);
         //cout<<"size = "<<clients.size()<<"  cur = "<<client<<endl;
-        handle(clients);
+        handle();
         //一旦接收到了就开辟一个线程将处理程序放入线程内
     }
     close_socket();
 }
 
-void Server::handle(vector<int> &clients) {
+void Server::handle() {
     //pthread_t pid;
     // loop to handle all requests
     //pthread_create(&pid, NULL, messhandle,(void *)&client);
@@ -113,25 +113,35 @@ void * Server::messhandle(void *server){
     //args *Arg = (args *)arg;
     //int client = Arg->clients;
     vector<int>clients;
+    vector<int> allclients;
     Server *_server = (Server *)server;
-    clients = _server->getclients();
+    clients = _server->getclients();//返回的是当前连接的客户端端口套接字
+    allclients = _server->getAllclient();//返回全部已经连接的套接字
     while(1){
     // get a request
     //int _client = *((int*)client);
     int _chat = _server->getchat();
     if(_chat == 1){
-        string request = _server->get_request();
+        string request = _server->get_request(clients[0]);
         int s = request.find_first_not_of("");
         int e = request.find_last_not_of(" ");
         string newrequest = request.substr(s, e - s + 1);
-        int client = atoi(newrequest.c_str());//要连接的客户端
-        _server->p2pchat(client, _server);
+        int port = atoi(newrequest.c_str());//要连接的客户端端口号
+        map<int, int> allclient2port = _server->getclient2port();
+        if(!allclient2port.count(port))
+        {
+            _server->send_response(clients, "请重新输入正确的端口号\n");
+            continue;
+        }
+        int client = allclient2port.
+        _server->send_response(clients, "通信已连接，请发送消息\n");
+        _server->p2pchat(client, _server,clients[0]);
         _server->setchat(0);
         string inform = "超时，连接已断开\n";
         _server->send_response(clients, inform);
         continue;
     }
-    string request = _server->get_request();
+    string request = _server->get_request(clients[0]);
     // break if client is done or an error occurred
     if (request.empty())
         break;
@@ -143,16 +153,15 @@ void * Server::messhandle(void *server){
     if (not success)
         break;
     }
-    int client = clients[clients.size() - 1];
+    int client = clients[0];
     close(client);
     //return NULL;
     return NULL;
 }
 
-string Server::get_request() {
+string Server::get_request(int client) {
     string request = "";
     // read until we get a newline
-    int client = m_clients[m_clients.size() - 1];
     while (request.find("\n") == string::npos) {
         int nread = recv(client,buf_,1024,0);
         if (nread < 0) {
@@ -201,6 +210,8 @@ string Server::get_request() {
                     perror("getsockname");
                 newrequest.append(inet_ntoa((in_addr)addr.sin_addr));
                 int port = ntohs(addr.sin_port);
+                if(!m_client2ports.count(port))
+                    m_client2ports[m_clients[i]] = port;
                 string strport = to_string(port);
                 newrequest.append(":"+strport+"(self)"+"\n");
                 break;
@@ -211,6 +222,8 @@ string Server::get_request() {
                 perror("getsockname");
             newrequest.append(inet_ntoa((in_addr)addr.sin_addr));
             int port = ntohs(addr.sin_port);
+            if(!m_client2ports.count(port))
+                m_client2ports[m_clients[i]] = port;
             string strport = to_string(port);
             newrequest.append(":"+strport+"\n");
         }
@@ -270,6 +283,14 @@ vector<int> Server::getclients(){
     return curClient;
 }
 
+vector<int> Server::getAllclient(){
+    return m_clients;
+}
+
+map<int,int> Server::getclient2port(){
+    return m_client2ports;
+}
+
 void Server::setclients(vector<int>clients){
     m_clients = clients;
 }
@@ -282,10 +303,11 @@ void Server::setchat(int _chat){
     chat = _chat;
 }
 
-void Server::p2pchat(int client, Server *server){
+//P2P
+void Server::p2pchat(int client, Server *server,int fromclient){
     time_t startT = time(nullptr);
     while (1) {
-        string request = server->get_request();
+        string request = server->get_request(fromclient);
         if(!request.compare("disconnect\n"))
             break;
         vector<int> clients;
@@ -301,6 +323,7 @@ void Server::p2pchat(int client, Server *server){
     }
 }
 
+//广播
 void Server::broadcast(vector<int> _clients){
     while(1){
         

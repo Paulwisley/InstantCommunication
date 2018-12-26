@@ -2,16 +2,13 @@
 
 CXX=			g++ $(CXXFLAGS)
 
-ECHO-SERVER=		echo-server.o server.o
-ECHO-CLIENT=		echo-client.o client.o
+ECHO-SERVER=		server/echo-server.o server/server.o
+ECHO-CLIENT=		client/echo-client.o client/client.o
 OBJS =			$(ECHO-SERVER) $(ECHO-CLIENT)
 
-LIBS=
-
-CXXFLAGS= -g
-
 all:	server client
-
+	g++  $(ECHO-SERVER) -o server/server 
+	g++  $(ECHO-CLIENT) -o client/client
 server:$(ECHO-SERVER)
 	$(CXX) -std=c++11 -o server $(ECHO-SERVER) $(LIBS) -lpthread
 
