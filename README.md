@@ -1,2 +1,2 @@
 # InstantCommunication
-based on linux c++ socke multi thread communication
+based on linux c++ socket multi thread communication
