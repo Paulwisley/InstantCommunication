@@ -8,12 +8,18 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include "pthread.h"
 #include <fstream>
 #include <iostream>
 #include <string>
 
 using namespace std;
+
+typedef struct {
+    struct sockaddr_in addr;
+    int client;
+    int isConn;
+}clientInfo;
 
 class Client {
 public:
@@ -22,13 +28,17 @@ public:
 
     int run();
 
+
 private:
     virtual void create();
     virtual void close_socket();
     void echo();
     bool send_request(string);
     bool get_response();
-    bool instant_response();
+    static void *instant_response(void *);
+    bool getchat();
+    void handlechat();
+    sockaddr_in getserver();
     
     string host_;
     int port_;
@@ -37,6 +47,5 @@ private:
     char* buf_;
     int disconnect;
     int transport;
-    
     int enableread;
 };

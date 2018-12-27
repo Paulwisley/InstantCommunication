@@ -64,7 +64,7 @@ int Client::run() {
     return disconnect;
 }
 
-void Client::create() {
+sockaddr_in Client::getserver(){
     struct sockaddr_in server_addr;
     // use DNS to get IP address
     struct hostent *hostEntry;
@@ -73,26 +73,32 @@ void Client::create() {
         cout << "No such host name: " << host_ << endl;
         exit(-1);
     }
-
+    
     // setup socket address structure
     memset(&server_addr,0,sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(port_);
     memcpy(&server_addr.sin_addr, hostEntry->h_addr_list[0], hostEntry->h_length);
+    return server_addr;
+}
 
+void Client::create() {
+    struct sockaddr_in server_addr;
+    server_addr = getserver();
+    
     // create socket
     server_ = socket(PF_INET,SOCK_STREAM,0);
     if (!server_) {
         perror("socket");
         exit(-1);
     }
-
     // connect to server
     if (connect(server_,(const struct sockaddr *)&server_addr,sizeof(server_addr)) < 0) {
         perror("connect");
         exit(-1);
     }
     cout<<"已连接!请选择以下功能..."<<endl;
+    handlechat();
 }
 
 void Client::close_socket() {
@@ -103,20 +109,17 @@ void Client::echo() {
     string line;
     // loop to handle user interface
     while (getline(cin,line)) {
-        
         // append a newline
         line += "\n";
-        // send request
+         //send request
         bool success = send_request(line);
-        // break if an error occurred
         if (not success)
-        //cout<<"e1"<<endl;
+            //cout<<"e1"<<endl;
             break;
-        // get a response
-        success = get_response();
-        // break if an error occurred
+         //break if an error occurred
+        //success = get_response();
         if (not success && !disconnect)
-        //cout<<"e2"<<endl;
+            //cout<<"e2"<<endl;
             break;
         if (not success && disconnect)
         {
@@ -132,6 +135,27 @@ void Client::echo() {
                     cout<<"输入非法，请重新输入："<<endl;
             }
         }
+         //break if an error occurred
+        
+//        if(!line.compare("quit\n")){
+//            return;
+//        }
+//
+//        if (!line.compare("disconnect\n"))
+//        {
+//            cout<<"连接已断开..."<<endl;
+//            cout<<"输入login重新登录，输入quit退出程序 ：";
+//            shutdown(server_, 1);
+//            while(getline(cin,line)){
+//                if(!line.compare("login"))
+//                    return;
+//                else if(!line.compare("quit"))
+//                    return;
+//                else
+//                    cout<<"输入非法，请重新输入："<<endl;
+//            }
+//        }
+//
         if(!line.compare("Time\n")||!line.compare("name\n")||!line.compare("who\n")){
             return;
         }
@@ -163,39 +187,89 @@ bool Client::send_request(string request) {
         nleft -= nwritten;
         ptr += nwritten;
     }
+    
+    //enableread = 0;
     return true;
 }
 
 bool Client::get_response() {
-    string response = "";
     // read until we get a newline
     //cout<<"进入response"<<endl;
-    while (response.find("\n") == string::npos) {
-        int nread = recv(server_,buf_,1024,0);
-        if (nread < 0) {
-            if (errno == EINTR)
-                // the socket call was interrupted -- try again
-                continue;
-            else
-                // an error occurred, so break out
-                return "";
-        } else if (nread == 0) {
-            // the socket is closed
-            return "";
-        }
+    //response.find("\n") == string::npos
+    while ((recv(server_,buf_,1024,0) >= 0)) {
+//        if (nread < 0) {
+//            if (errno == EINTR)
+//                // the socket call was interrupted -- try again
+//                continue;
+//            else
+//                // an error occurred, so break out
+//                return "";
+//        } else if (nread == 0) {
+//            // the socket is closed
+//            return "";
+//        }
         // be sure to use append in case we have binary data
-        response.append(buf_,nread);
+        string response = "";
+        response.append(buf_);
+        cout << response;
+        memset(buf_, 0, 1024);
     }
     //cout<<"ds="<<response<<endl;
     // a better client would cut off anything after the newline and
     // save it in a cache
-    if(response.compare("quit\n")==0)
-        return false;
-    if(response.compare("disconnect\n")==0)
-    {
-        disconnect = 1;
-        return false;
-    }
-    cout << response;
+//    if(response.compare("quit\n")==0)
+//        return false;
+//    if(response.compare("disconnect\n")==0)
+//    {
+//        disconnect = 1;
+//        return false;
+//    }
+    
+    //enableread = 1;
     return true;
 }
+
+void Client::handlechat(){
+    pthread_t pid;
+    pthread_create(&pid, NULL, Client::instant_response, (void *)this);
+    //pthread_exit(0);
+}
+
+void *Client::instant_response(void *client){
+    Client *_client = (Client *)client;
+    bool success = _client->get_response();
+    if(not success){
+        pthread_exit(0);
+    }
+    return NULL;
+}
+
+//bool Client:: getchat(){
+//    string response = "";
+//    // read until we get a newline
+//    //cout<<"进入response"<<endl;
+//    //struct sockaddr_in server_addr = getserver();
+//    //socklen_t len = sizeof(struct sockaddr_in);
+//    while (response.find("\n") == string::npos) {
+//        //int s = socket(PF_INET, SOCK_DGRAM, 0);
+//        int nread = ::recv(server_,buf_,1024,0);
+//        if (nread < 0) {
+//        if (errno == EINTR)
+//                // the socket call was interrupted -- try again
+//                continue;
+//            else
+//                // an error occurred, so break out
+//                return "";
+//        } else if (nread == 0) {
+//            // the socket is closed
+//            return "";
+//        }
+//        // be sure to use append in case we have binary data
+//        response.append(buf_,nread);
+//    }
+//    //cout<<"ds="<<response<<endl;
+//    // a better client would cut off anything after the newline and
+//    // save it in a cache
+//    cout << "收到一条及时信息："<<response;
+//        return true;
+//}
