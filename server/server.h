@@ -41,6 +41,7 @@ private:
     vector<int> getclients();
     vector<int> getAllclient();
     map<int,int> getclient2port();
+    //map<int,int> getport2client();
     void setclients(vector<int>);
     static void *messhandle(void *);
     int getchat();
@@ -57,5 +58,6 @@ private:
     int chat;
     vector<int>m_clients;
     map<int,int>m_client2ports;//维护所有的端口号
+    map<int,int>m_port2clients;//维护所有的端口号
     vector<sockaddr_in> clientaddrs;
 };

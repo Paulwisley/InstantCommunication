@@ -211,8 +211,10 @@ string Server::get_request(int client) {
                     perror("getsockname");
                 newrequest.append(inet_ntoa((in_addr)addr.sin_addr));
                 int port = ntohs(addr.sin_port);
-                if(!m_client2ports.count(port))
+                if(!m_client2ports.count(port)){
                     m_client2ports[port] = m_clients[i];
+                    m_port2clients[m_clients[i]] = port;
+                }
                 string strport = to_string(port);
                 newrequest.append(":"+strport+"(self)"+"\n");
                 break;
@@ -309,8 +311,10 @@ void Server::p2pchat(int client, Server *server,int fromclient){
     time_t startT = time(nullptr);
     while (1) {
         string request = server->get_request(fromclient);
-        if(!request.compare("disconnect\n"))
+        if(!request.compare("discom\n"))
             break;
+        string selfport = to_string(m_port2clients[getclients()[0]]);
+        request.append(" -- 来自端口："+ selfport+"\n");
         vector<int> clients;
         clients.push_back(client);
         if(request.empty())
